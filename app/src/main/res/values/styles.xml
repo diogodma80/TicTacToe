@@ -7,4 +7,9 @@
         <item name="colorAccent">@color/colorAccent</item>
     </style>
 
+    <declare-styleable name="TicTacToe">
+        <attr name="barColor" format="color"/>
+        <attr name="barWidth" format="dimension"/>
+    </declare-styleable>
+
 </resources>

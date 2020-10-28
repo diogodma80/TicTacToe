@@ -2,12 +2,15 @@ package dominando.android.tictactoe;
 
 import android.content.Context;
 import android.content.res.Resources;
+import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.view.GestureDetector;
@@ -15,12 +18,18 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.annotation.Nullable;
+
 public class TicTacToe extends View {
 
     public static final int X = 1;
     public static final int O = 2;
     private static final int EMPTY = 0;
     public static final int DRAW = 3;
+
+    // styles
+    int barColor;
+    float barWidth;
 
     int size;
     int turn;
@@ -39,6 +48,9 @@ public class TicTacToe extends View {
         turn = X;
         mesh = new int[3][3];
 
+        TypedArray typedArray = context.obtainStyledAttributes(attrs, R.styleable.TicTacToe);
+        barColor = typedArray.getColor(R.styleable.TicTacToe_barColor, Color.BLACK);
+        barWidth = typedArray.getDimension(R.styleable.TicTacToe_barWidth, 3);
     }
 
     @Override
@@ -90,8 +102,8 @@ public class TicTacToe extends View {
         int squaredCell = size / 3;
 
         //drawing the lines;
-        paint.setColor(Color.BLACK);
-        paint.setStrokeWidth(3);
+        paint.setColor(barColor);
+        paint.setStrokeWidth(barWidth);
 
         //vertical
         canvas.drawLine(squaredCell, 0, squaredCell, size, paint);
@@ -176,6 +188,23 @@ public class TicTacToe extends View {
         return (a == b && b == c && a != EMPTY);
     }
 
+    @Nullable
+    @Override
+    protected Parcelable onSaveInstanceState() {
+        Parcelable parcelable = super.onSaveInstanceState();
+        GameStatus status = new GameStatus(parcelable, turn, mesh);
+        return status;
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Parcelable state) {
+        GameStatus status = (GameStatus) state;
+        super.onRestoreInstanceState(status.getSuperState());
+        turn = status.turn;
+        mesh = status.mesh;
+        invalidate();
+    }
+
     public interface TicTacToeListener {
         void endTheGame(int winner);
     }
@@ -214,6 +243,45 @@ public class TicTacToe extends View {
         @Override
         public boolean onDown(MotionEvent e) {
             return true;
+        }
+    }
+
+    static class GameStatus  extends BaseSavedState {
+        int turn;
+        int[][] mesh;
+
+        private GameStatus(Parcelable parcelable, int turn, int[][] mesh) {
+            super(parcelable);
+            this.turn = turn;
+            this.mesh = mesh;
+        }
+
+        private GameStatus(Parcel parcel) {
+            super(parcel);
+            turn = parcel.readInt();
+            mesh = new int[3][3];
+            for(int line = 0; line < mesh.length; line++) {
+                parcel.readIntArray(mesh[line]);
+            }
+        }
+
+        public final Parcelable.Creator<GameStatus> CREATOR = new Parcelable.Creator<GameStatus>() {
+            public GameStatus createFromParcel(Parcel in) {
+                return new GameStatus(in);
+            }
+
+            public GameStatus[] newArray(int size) {
+                return new GameStatus[size];
+            }
+        };
+
+        @Override
+        public void writeToParcel(Parcel out, int flags) {
+            super.writeToParcel(out, flags);
+            out.writeInt(turn);
+            for(int line = 0; line < mesh.length; line++) {
+                out.writeIntArray(mesh[line]);
+            }
         }
     }
 }
